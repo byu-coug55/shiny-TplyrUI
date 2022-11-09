@@ -38,6 +38,7 @@ ui <- fluidPage(
                      reactableOutput("summary"),
                      br(),
                      br(),
+                     h5("Field Select"),
                      textOutput("test")
               
             )
@@ -160,7 +161,7 @@ server <- function(input, output, session) {
   row <- reactive(input$row$index)
   col <- reactive(input$col$column)
   
-  test = reactive(paste0("Row = ", row(), " Column = ", col()))
+  test = reactive(paste0("Row = ", row(), "  | Column = ", col()))
   
   
   output$data = renderReactable(data())
