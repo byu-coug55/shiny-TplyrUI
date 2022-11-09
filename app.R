@@ -33,6 +33,7 @@ ui <- fluidPage(
                      reactableOutput("data")
                      ),
             tabPanel("Summary Table",
+                     div(style = "display:inline-block; float:right",downloadButton('download_csv', 'Download Summary as .csv')),
                      br(),
                      br(),
                      reactableOutput("summary"),
@@ -158,6 +159,15 @@ server <- function(input, output, session) {
     
   })
   
+  tplyr_tibble = reactive({
+    tplyr_table(var_data(), !!rlang::sym(input$variable_choice1)) %>%
+      group_type(input_group = input$group_type2, input_var = input$variable_choice2) %>%
+      group_type(input_group = input$group_type3, input_var = input$variable_choice3) %>%
+      build() %>%
+      select(starts_with("row"), starts_with("var"))
+    
+  })
+  
   row <- reactive(input$row$index)
   col <- reactive(input$col$column)
   
@@ -168,6 +178,12 @@ server <- function(input, output, session) {
   output$summary = renderReactable(tplyr_tab())
   output$test = renderText(test())
   
+  output$download_csv <- downloadHandler(
+    filename = function(){paste0("summary_data_",Sys.time(),".csv")}, 
+    content = function(fname){
+      write.csv(tplyr_tibble(), fname)
+    }
+  )
   
   
 }
