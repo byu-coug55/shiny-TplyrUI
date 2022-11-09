@@ -35,7 +35,8 @@ ui <- fluidPage(
             tabPanel("Summary Table",
                      br(),
                      br(),
-                     reactableOutput("summary")
+                     reactableOutput("summary"),
+                     textOutput("test")
               
             )
         )
@@ -134,7 +135,9 @@ server <- function(input, output, session) {
   
   variable3 = reactive(data_tibble() %>% select(input$variable_choice3) )
   
-  var_data = reactive(bind_cols(variable1(),variable2(), variable3()))
+  row_id = reactive(seq(1,length(variable1()), length.out = 1))
+  
+  var_data = reactive(bind_cols(row_id(),variable1(),variable2(), variable3()))
   
   tplyr_tab = reactive({
     tplyr_table(var_data(), !!rlang::sym(input$variable_choice1)) %>%
@@ -142,13 +145,25 @@ server <- function(input, output, session) {
       group_type(input_group = input$group_type3, input_var = input$variable_choice3) %>%
       build() %>%
       select(starts_with("row"), starts_with("var")) %>%
-      reactable()
+      reactable(. , sortable = FALSE,
+                onClick = JS("function(rowInfo, colInfo) {
+                      if (window.Shiny) {
+                        Shiny.setInputValue('row', { index: rowInfo.index + 1 })
+                        Shiny.setInputValue('col', { column: colInfo.id })
+                        }
+                    }"))
     
-  }) 
+  })
+  
+  row <- reactive(input$row$index)
+  col <- reactive(input$col$column)
+  
+  test = reactive(paste0("Row = ", row(), " Column = ", col()))
   
   
   output$data = renderReactable(data())
   output$summary = renderReactable(tplyr_tab())
+  output$test = renderText(test())
   
   
   
