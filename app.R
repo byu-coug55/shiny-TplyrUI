@@ -79,6 +79,7 @@ server <- function(input, output, session) {
       showNotification("Please import a csv file", duration = 45, closeButton = FALSE, type = "error")
       marathon_data
     } else {
+      file <- input$file
       read.csv(file$datapath)
     }
   })
@@ -96,6 +97,22 @@ server <- function(input, output, session) {
   observe({
     updateSelectInput(session, "variable_choice3", 
                       choices = variable_options(), selected = variable_options()[3,] )
+  })
+  
+  observeEvent(input$file, {
+    if (is.numeric(variable1())){
+      updateRadioButtons(session, "group_type2", selected = "Summary Stats")
+    } else {
+      updateRadioButtons(session, "group_type2", selected = "Count/Proportions")
+    }
+  })
+  
+  observeEvent(input$file, {
+    if (is.numeric(variable1())){
+      updateRadioButtons(session, "group_type3", selected = "Summary Stats")
+    } else {
+      updateRadioButtons(session, "group_type3", selected = "Count/Proportions")
+    }
   })
   
   group_type = function(data, input_group, input_var){
