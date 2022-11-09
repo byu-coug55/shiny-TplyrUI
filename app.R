@@ -147,9 +147,9 @@ server <- function(input, output, session) {
     tplyr_table(var_data(), !!rlang::sym(input$variable_choice1)) %>%
       group_type(input_group = input$group_type2, input_var = input$variable_choice2) %>%
       group_type(input_group = input$group_type3, input_var = input$variable_choice3) %>%
-      build() %>%
+      build() %>% apply_row_masks() %>%
       select(starts_with("row"), starts_with("var")) %>%
-      reactable(. , sortable = FALSE,
+      reactable(. , sortable = FALSE, bordered = TRUE, highlight = TRUE,
                 onClick = JS("function(rowInfo, colInfo) {
                       if (window.Shiny) {
                         Shiny.setInputValue('row', { index: rowInfo.index + 1 })
