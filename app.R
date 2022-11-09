@@ -36,6 +36,8 @@ ui <- fluidPage(
                      br(),
                      br(),
                      reactableOutput("summary"),
+                     br(),
+                     br(),
                      textOutput("test")
               
             )
