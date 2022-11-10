@@ -1,6 +1,8 @@
 library(shiny)
 library(tidyverse)
 library(reactable)
+library(stringr)
+library(snakecase)
 
 
 marathon_data = read_csv("joined_marathon_data.csv") %>% mutate(BMI = round(BMI,2), Power = round(Power,2))
@@ -40,7 +42,14 @@ ui <- fluidPage(
                      br(),
                      br(),
                      h5("Field Select"),
-                     textOutput("test")
+                     textOutput("test"),
+                     br(),
+                     br(),
+                     reactableOutput("table_sc"),
+                     br(),
+                     br(),
+                     h5("Field Select"),
+                     textOutput("test_click2"),
               
             )
         )
@@ -50,6 +59,15 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
+  
+  snakecase_cols = function(x){
+    names(x) <- tolower(names(x))
+    names(x) <- trimws(str_replace_all(names(x), "[^[:alnum:]]", " "))
+    names(x) <- str_replace_all(names(x), " ", "_")
+    names(x) <- str_replace_all(names(x), "__", "_")
+    return(x)
+    
+  }
 
   default_data_table = reactive({
       reactable(marathon_data, bordered = TRUE, striped = TRUE, highlight = TRUE,
@@ -184,6 +202,45 @@ server <- function(input, output, session) {
       write.csv(tplyr_tibble(), fname)
     }
   )
+  
+  data_sc = reactive(snakecase_cols(data_tibble()))
+  
+  choice1 = reactive(to_snake_case(input$variable_choice1))
+  choice2 = reactive(to_snake_case(input$variable_choice2))
+  choice3 = reactive(to_snake_case(input$variable_choice3))
+  
+  variable1_sc = reactive(data_sc() %>% select(choice1()) )
+  
+  variable2_sc = reactive(data_sc() %>% select(choice2()) )
+  
+  variable3_sc = reactive(data_sc() %>% select(choice3()) )
+  
+  var_data_sc = reactive(bind_cols(variable1_sc(),variable2_sc(), variable3_sc()))
+  
+  tplyr_sc = reactive({
+    tplyr_table(data_sc(), !!rlang::sym(choice1())) %>%
+      group_type(input_group = input$group_type2, input_var = choice2()) %>%
+      group_type(input_group = input$group_type3, input_var = choice3()) %>%
+      build() %>% # adding 'metadata=T' here produces the following error: Problem while computing `meta = build_count_meta(...)`. Caused by error in `values[[1]]`: ! subscript out of bounds 
+      select(starts_with("row"), starts_with("var")) %>% apply_row_masks() %>%
+      reactable(. , sortable = FALSE, bordered = TRUE, highlight = TRUE,
+                onClick = JS("function(rowInfo, colInfo) {
+                      if (window.Shiny) {
+                        Shiny.setInputValue('row2', { index: rowInfo.index + 1 })
+                        Shiny.setInputValue('col2', { column: colInfo.id })
+                        }
+                    }"))
+    
+  })
+  
+  row2 <- reactive(tplyr_sc()[input$row$index,1]$row_id)
+  col2 <- reactive(input$col$column)
+  
+  test_click2 = reactive(paste0("Row = ", row2(), "  | Column = ", col2()))
+  
+  output$table_sc = renderReactable(tplyr_sc())
+  
+  output$test_click2 = renderText(test_click2())
   
   
 }
